@@ -45,7 +45,7 @@ test('ten distinct banks respect letter lengths and contain no repeated prompts'
   const allRoman = new Set();
   for (const pools of Object.values(QUESTION_BANKS)) {
     for (const [i, words] of pools.entries()) {
-      assert.equal(words.length, 8);
+      assert.ok(words.length >= 40);
       for (const [japanese, roman] of words) {
         assert.match(roman, /^[a-z]+$/);
         assert.ok(roman.length >= LEVELS[i].min && roman.length <= LEVELS[i].max, `${japanese}: ${roman.length}`);
@@ -70,8 +70,8 @@ test('no question repeats within a session in any mode or level, including resta
           seen.add(roman);
           for (const char of roman) assert.equal(game.type(char, 1), true);
         }
-        assert.equal(seen.size, 8);
-        assert.equal(game.completed, 8);
+        assert.equal(seen.size, game.words.length);
+        assert.equal(game.completed, game.words.length);
         assert.equal(game.type('a', 2), null);
       }
     }
@@ -85,4 +85,34 @@ test('every exam level expires after 60 seconds; unsupported settings rejected',
   }
   assert.throws(() => new Game().start(0, { level: 6 }), RangeError);
   assert.throws(() => new Game().start(0, { mode: 'other' }), RangeError);
+});
+
+test('history survives new games and prefers unseen questions until the bank is exhausted', () => {
+  for (const mode of ['practice', 'exam']) for (let level = 1; level <= 5; level++) {
+    let persisted = {};
+    const seen = new Set();
+    const count = QUESTION_BANKS[mode][level - 1].length;
+    let previous;
+    for (let run = 0; run <= count; run++) {
+      const game = new Game({ random: () => 0, history: JSON.parse(JSON.stringify(persisted)), onHistoryChange: value => { persisted = value; } });
+      game.start(0, { mode, level });
+      const roman = game.word[1];
+      if (run < count) assert.ok(!seen.has(roman), `${mode}-${level}: ${roman}`);
+      assert.notEqual(roman, previous);
+      seen.add(roman);
+      previous = roman;
+    }
+    assert.equal(seen.size, count);
+  }
+});
+test('invalid saved history entries are ignored; mode and level histories stay separate', () => {
+  const history = { 'practice-1': ['removed-question', 123], 'exam-1': 'corrupt' };
+  const game = new Game({ random: () => 0, history });
+  game.start(0, { mode: 'practice', level: 1 });
+  const first = game.word[1];
+  game.start(0, { mode: 'exam', level: 1 });
+  assert.equal(history['practice-1'][0], first);
+  assert.equal(history['exam-1'].length, 1);
+  game.start(0, { mode: 'practice', level: 1 });
+  assert.notEqual(game.word[1], first);
 });

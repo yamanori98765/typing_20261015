@@ -1,5 +1,12 @@
 import { Game, LEVELS, QUESTION_BANKS } from './game.js';
-const game = new Game();
+let history = {};
+try {
+  const saved = JSON.parse(localStorage.getItem('typing-question-history') || '{}');
+  if (saved && typeof saved === 'object' && !Array.isArray(saved)) history = saved;
+} catch { /* A corrupt or unavailable history must not prevent practice. */ }
+const game = new Game({ history, onHistoryChange(value) {
+  try { localStorage.setItem('typing-question-history', JSON.stringify(value)); } catch { /* Session-only history still works. */ }
+} });
 const $ = id => document.getElementById(id);
 let timer;
 let best = 0;

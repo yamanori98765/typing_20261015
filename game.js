@@ -1,3 +1,5 @@
+import { EXTRA_VOCABULARY } from './vocabulary.js';
+
 // Separate question banks for each mode and level; lengths count roman letters.
 const bank = rows => rows.map(row => row.split('|'));
 export const LEVELS = [
@@ -23,14 +25,31 @@ export const QUESTION_BANKS = {
     bank(['図書館で新しい物語に出会う|toshokandeatarashiimonogatarinideau', '自転車に乗って海まで出かけよう|jitenshaninotteumimadedekakeyou', '失敗してもあきらめずに挑戦する|shippaishitemoakiramezunichousensuru', '星空を見上げて明日の夢を語る|hoshizorawomiageteashitanoyumewokataru', '毎日の練習が自信につながる|mainichinorenshuugajishinnitsunagaru', '知らない世界への扉を開こう|shiranaisekaihenotobirawohirakou', '遠くの山に朝の光が差し込む|tookunoyamaniasanohikarigasashikomu', '最後まで集中してやり遂げよう|saigomadeshuuchuushiteyaritogeyou'])
   ]
 };
+// Distribute new vocabulary across separate mode banks without duplicate prompts.
+const usedJapanese = new Set(Object.values(QUESTION_BANKS).flat(2).map(word => word[0]));
+const usedRoman = new Set(Object.values(QUESTION_BANKS).flat(2).map(word => word[1]));
+for (const word of EXTRA_VOCABULARY) {
+  if (usedJapanese.has(word[0]) || usedRoman.has(word[1])) continue;
+  const candidates = LEVELS.flatMap((level, index) => word[1].length >= level.min && word[1].length <= level.max
+    ? ['practice', 'exam'].map(mode => ({ mode, index, size: QUESTION_BANKS[mode][index].length })) : []);
+  candidates.sort((a, b) => a.size - b.size);
+  const target = candidates[0];
+  if (!target) continue;
+  QUESTION_BANKS[target.mode][target.index].push(word);
+  usedJapanese.add(word[0]);
+  usedRoman.add(word[1]);
+}
+
 // Each level uses an explicit length range in both modes.
 // Keep banks separate; update the ranges if adding vocabulary outside them.
 export const WORDS = QUESTION_BANKS.practice.flat();
 
 export class Game {
-  constructor({ duration = 60, random = Math.random } = {}) {
+  constructor({ duration = 60, random = Math.random, history = {}, onHistoryChange = () => {} } = {}) {
     this.duration = duration;
     this.random = random;
+    this.history = history;
+    this.onHistoryChange = onHistoryChange;
     this.reset();
   }
   reset() {
@@ -48,6 +67,9 @@ export class Game {
     this.mode = mode;
     this.level = level;
     this.words = QUESTION_BANKS[mode][level - 1];
+    this.historyKey = `${mode}-${level}`;
+    const saved = this.history[this.historyKey];
+    this.seen = new Set(Array.isArray(saved) ? saved.filter(value => typeof value === 'string' && this.words.some(word => word[1] === value)) : []);
     this.reset();
     this.state = 'running';
     this.deadline = now + this.duration * 1000;
@@ -61,8 +83,19 @@ export class Game {
       }
       this.remainingIndices = this.words.map((_, index) => index);
     }
-    const position = Math.floor(this.random() * this.remainingIndices.length);
-    this.wordIndex = this.remainingIndices.splice(position, 1)[0];
+    let unseen = this.remainingIndices.filter(index => !this.seen.has(this.words[index][1]));
+    if (unseen.length === 0) {
+      const previous = [...this.seen].at(-1);
+      this.seen.clear();
+      unseen = this.remainingIndices.filter(index => this.words[index][1] !== previous);
+      if (unseen.length === 0) unseen = [...this.remainingIndices];
+    }
+    const index = unseen[Math.floor(this.random() * unseen.length)];
+    this.remainingIndices.splice(this.remainingIndices.indexOf(index), 1);
+    this.wordIndex = index;
+    this.seen.add(this.word[1]);
+    this.history[this.historyKey] = [...this.seen];
+    this.onHistoryChange(this.history);
     this.position = 0;
   }
   get word() { return this.words?.[this.wordIndex]; }
