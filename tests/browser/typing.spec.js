@@ -6,6 +6,7 @@ test('practice, mistake, restart, finish and saved best', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.locator('#typing')).toBeDisabled();
+  await page.locator('#mode').selectOption('exam');
   await page.locator('#start').click();
   await expect(page.locator('#typing')).toBeFocused();
   const roman = await page.locator('#roman').innerText();
@@ -19,6 +20,7 @@ test('practice, mistake, restart, finish and saved best', async ({ page }) => {
   await expect(page.locator('#typing')).toBeDisabled();
   const best = await page.locator('#best').innerText();
   await page.reload();
+  await page.locator('#mode').selectOption('exam');
   await expect(page.locator('#best')).toHaveText(best);
   await page.locator('#start').click();
   await page.locator('#typing').pressSequentially('z');
@@ -35,5 +37,40 @@ test('mobile layout and input', async ({ page }) => {
   const roman = await page.locator('#roman').innerText();
   await page.locator('#typing').fill(roman);
   await expect(page.locator('#score')).toHaveText(String(roman.length * 10));
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('unlimited practice, five exam levels and separate best scores', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('/');
+  await page.locator('#start').click();
+  await page.locator('#typing').fill(await page.locator('#roman').innerText());
+  await page.clock.fastForward(120000);
+  await expect(page.locator('#typing')).toBeEnabled();
+  await expect(page.locator('#time')).toHaveText('∞');
+  await expect(page.locator('#mode')).toBeDisabled();
+  await page.locator('#stop').click();
+  await expect(page.locator('#result')).toContainText('練習');
+  const practiceBest = await page.locator('#best').innerText();
+  await page.locator('#mode').selectOption('exam');
+  await expect(page.locator('#best')).toHaveText('0');
+  for (let level = 1; level <= 5; level++) {
+    await page.locator('#level').selectOption(String(level));
+    await expect(page.locator('#best')).toHaveText('0');
+    await page.locator('#start').click();
+    await expect(page.locator('#stop')).toBeHidden();
+    await page.locator('#typing').fill(await page.locator('#roman').innerText());
+    await page.clock.fastForward(60000);
+    await expect(page.locator('#result')).toContainText(`本番 レベル${level}`);
+    await expect(page.locator('#result')).toContainText('1 語クリア');
+    await expect(page.locator('#typing')).toBeDisabled();
+    expect(Number(await page.locator('#best').innerText())).toBeGreaterThan(0);
+  }
+  await page.locator('#mode').selectOption('practice');
+  await expect(page.locator('#best')).toHaveText(practiceBest);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.locator('#mode').selectOption('exam');
+  await page.locator('#level').selectOption('5');
+  await page.locator('#start').click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
