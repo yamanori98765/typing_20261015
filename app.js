@@ -1,9 +1,9 @@
-import { Game, LEVELS } from './game.js';
+import { Game, LEVELS, QUESTION_BANKS } from './game.js';
 const game = new Game();
 const $ = id => document.getElementById(id);
 let timer;
 let best = 0;
-function bestKey() { return $('mode').value === 'practice' ? 'typing-best' : `typing-best-exam-${$('level').value}`; }
+function bestKey() { return `typing-best-v2-${$('mode').value}-${$('level').value}`; }
 function loadBest() {
   best = 0;
   try {
@@ -15,8 +15,11 @@ function loadBest() {
 function settingsChanged() {
   const practice = $('mode').value === 'practice';
   game.reset();
-  $('level-field').hidden = practice;
-  $('mode-description').textContent = practice ? '時間を気にせず練習できます。「練習を終える」で結果を確認。' : `${LEVELS[Number($('level').value) - 1].description}。60秒でスコアを測定します。`;
+  $('level-field').hidden = false;
+  const level = LEVELS[Number($('level').value) - 1];
+  const words = QUESTION_BANKS[$('mode').value][Number($('level').value) - 1];
+  const lengths = words.map(([, text]) => text.length);
+  $('mode-description').textContent = `${level.description} · ${Math.min(...lengths)}〜${Math.max(...lengths)}文字（英字） · 全${words.length}問。${practice ? '時間無制限' : '制限時間60秒'}。同じ問題は出ず、全問クリアで終了します。`;
   $('time').textContent = practice ? '∞' : '60';
   $('time-unit').textContent = practice ? '' : ' 秒';
   $('progress').style.width = '100%';
@@ -27,7 +30,7 @@ function settingsChanged() {
   $('result').hidden = true;
   $('start').textContent = practice ? '練習をはじめる →' : '本番をはじめる →';
   $('status').textContent = '準備ができたら、はじめましょう';
-  $('best-label').textContent = practice ? '練習のベスト' : `本番 レベル${$('level').value}のベスト`;
+  $('best-label').textContent = `${practice ? '練習' : '本番'} レベル${$('level').value}のベスト`;
   loadBest();
 }
 $('mode').addEventListener('change', settingsChanged);
@@ -59,9 +62,9 @@ function finish() {
   $('level').disabled = false;
   $('stop').hidden = true;
   $('reset').hidden = true;
-  $('status').textContent = 'おつかれさまでした！';
+  $('status').textContent = game.completed === game.words.length ? '全問クリア！ おつかれさまでした！' : 'おつかれさまでした！';
   $('result').hidden = false;
-  $('result').textContent = `${game.mode === 'practice' ? '練習' : `本番 レベル${game.level}`} · ${game.score} 点 · ${game.completed} 語クリア · 正確率 ${game.accuracy}% · ミス ${game.misses} 回`;
+  $('result').textContent = `${`${game.mode === 'practice' ? '練習' : '本番'} レベル${game.level}`} · ${game.score} 点 · ${game.completed} 語クリア · 正確率 ${game.accuracy}% · ミス ${game.misses} 回`;
   best = Math.max(best, game.score);
   $('best').textContent = best;
   try { localStorage.setItem(bestKey(), String(best)); } catch { /* Practice works without storage. */ }
@@ -76,7 +79,7 @@ function start() {
   $('start').hidden = true;
   $('reset').hidden = false;
   $('result').hidden = true;
-  $('status').textContent = '表示されたローマ字を入力してください';
+  $('status').textContent = `${game.mode === 'practice' ? '練習' : '本番'} レベル${game.level} · 全${game.words.length}問`;
   $('hint').textContent = '日本語入力（IME）をオフにしてください';
   $('typing').classList.remove('miss');
   $('typing').disabled = false;

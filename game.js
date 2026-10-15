@@ -1,27 +1,31 @@
-export const WORDS = [
-  ['桜', 'sakura'], ['猫', 'neko'], ['青空', 'aozora'], ['ありがとう', 'arigatou'],
-  ['図書館', 'toshokan'], ['ひまわり', 'himawari'], ['電車', 'densha'],
-  ['音楽', 'ongaku'], ['自転車', 'jitensha'], ['星空', 'hoshizora'],
-  ['おはよう', 'ohayou'], ['山', 'yama'], ['海', 'umi'], ['友達', 'tomodachi'],
-  ['たんぽぽ', 'tanpopo'], ['冒険', 'bouken'], ['未来', 'mirai'], ['笑顔', 'egao']
-];
-
+// Separate question banks for each mode and level; lengths count roman letters.
+const bank = rows => rows.map(row => row.split('|'));
 export const LEVELS = [
-  { name: '1 やさしい', description: '短いことばで基礎を確認', words: WORDS.filter(([, text]) => text.length <= 4) },
-  { name: '2 ふつう', description: '身近なことばに挑戦', words: WORDS.filter(([, text]) => text.length >= 5 && text.length <= 6) },
-  { name: '3 むずかしい', description: '長めのことばを正確に', words: WORDS.filter(([, text]) => text.length >= 7) },
-  { name: '4 上級', description: '短いフレーズを続けて入力', words: [
-    ['朝の散歩', 'asanosanpo'], ['音楽を聴く', 'ongakuwokiku'], ['本を読む時間', 'honwoyomujikan'],
-    ['新しい友達', 'atarashiitomodachi'], ['青い空を見上げる', 'aoisorawomiageru']
-  ] },
-  { name: '5 達人', description: '長い文章で集中力を試す', words: [
-    ['毎日の練習が自信につながる', 'mainichinorenshuugajishinnitsunagaru'],
-    ['図書館で新しい物語に出会う', 'toshokandeatarashiimonogatarinideau'],
-    ['自転車に乗って海まで出かけよう', 'jitenshaninotteumimadedekakeyou'],
-    ['失敗してもあきらめずに挑戦する', 'shippaishitemoakiramezunichousensuru'],
-    ['星空を見上げて明日の夢を語る', 'hoshizorawomiageteashitanoyumewokataru']
-  ] }
+  { name: '1 やさしい', min: 2, max: 5, description: '短いことば' },
+  { name: '2 ふつう', min: 5, max: 6, description: '身近なことば' },
+  { name: '3 むずかしい', min: 7, max: 9, description: '長めのことば' },
+  { name: '4 上級', min: 10, max: 16, description: '短いフレーズ' },
+  { name: '5 達人', min: 17, max: 40, description: '長い文章' }
 ];
+export const QUESTION_BANKS = {
+  practice: [
+    bank(['猫|neko', '犬|inu', '海|umi', '山|yama', '空|sora', '雨|ame', '花|hana', '春|haru']),
+    bank(['桜|sakura', '机|tsukue', '車|kuruma', '光|hikari', '緑|midori', '心|kokoro', '卵|tamago', '遊ぶ|asobu']),
+    bank(['ひまわり|himawari', '図書館|toshokan', '自転車|jitensha', '友達|tomodachi', 'ありがとう|arigatou', '星空|hoshizora', 'たんぽぽ|tanpopo', '消しゴム|keshigomu']),
+    bank(['朝の散歩|asanosanpo', '音楽を聴く|ongakuwokiku', '本を読む時間|honwoyomujikan', '青い空を見る|aoisorawomiru', '公園で遊ぶ|kouendeasobu', '花に水をやる|hananimizuwoyaru', '海まで歩く|umimadearuku', '夕日を眺める|yuuhiwonagameru']),
+    bank(['毎日少しずつ練習しよう|mainichisukoshizutsurenshuushiyou', 'お気に入りの本を読む|okiniirinohonwoyomu', '明日はきっと晴れるだろう|ashitahakittoharerudarou', '家族と一緒にご飯を食べる|kazokutoisshonigohanwotaberu', '新しい靴で散歩に出かける|atarashiikutsudesanponidekakeru', '窓を開けて風を感じる|madowoaketekazewokanjiru', 'ゆっくり深呼吸をしてみよう|yukkurishinkokyuuwoshitemiyou', '小さな目標を一つ決める|chiisanamokuhyouwohitotsukimeru'])
+  ],
+  exam: [
+    bank(['月|tsuki', '雪|yuki', '秋|aki', '夏|natsu', '川|kawa', '森|mori', '鳥|tori', '星|hoshi']),
+    bank(['時計|tokei', '笑う|warau', '未来|mirai', '世界|sekai', '言葉|kotoba', '砂糖|satou', '天気|tenki', '朝日|asahi']),
+    bank(['冒険者|boukensha', '鉛筆|enpitsu', '教科書|kyoukasho', '約束|yakusoku', '旅行者|ryokousha', 'お手紙|otegami', '思い出す|omoidasu', '料理人|ryourinin']),
+    bank(['新しい道|atarashiimichi', '青空を見上げる|aozorawomiageru', '電車に乗る|denshaninoru', '手紙を書く|tegamiwokaku', '旅の計画|tabinokeikaku', '夢への一歩|yumenoippo', '季節の変化|kisetsunohenka', '笑顔で挨拶|egaodeaisatsu']),
+    bank(['図書館で新しい物語に出会う|toshokandeatarashiimonogatarinideau', '自転車に乗って海まで出かけよう|jitenshaninotteumimadedekakeyou', '失敗してもあきらめずに挑戦する|shippaishitemoakiramezunichousensuru', '星空を見上げて明日の夢を語る|hoshizorawomiageteashitanoyumewokataru', '毎日の練習が自信につながる|mainichinorenshuugajishinnitsunagaru', '知らない世界への扉を開こう|shiranaisekaihenotobirawohirakou', '遠くの山に朝の光が差し込む|tookunoyamaniasanohikarigasashikomu', '最後まで集中してやり遂げよう|saigomadeshuuchuushiteyaritogeyou'])
+  ]
+};
+// Each level uses an explicit length range in both modes.
+// Keep banks separate; update the ranges if adding vocabulary outside them.
+export const WORDS = QUESTION_BANKS.practice.flat();
 
 export class Game {
   constructor({ duration = 60, random = Math.random } = {}) {
@@ -37,23 +41,28 @@ export class Game {
     this.position = 0;
     this.wordIndex = -1;
     this.deadline = 0;
+    this.remainingIndices = [];
   }
   start(now, { mode = 'exam', level = 1 } = {}) {
     if (!['practice', 'exam'].includes(mode) || !Number.isInteger(level) || level < 1 || level > 5) throw new RangeError('Invalid mode or level');
     this.mode = mode;
     this.level = level;
-    this.words = mode === 'practice' ? WORDS : LEVELS[level - 1].words;
+    this.words = QUESTION_BANKS[mode][level - 1];
     this.reset();
     this.state = 'running';
     this.deadline = now + this.duration * 1000;
     this.nextWord();
   }
   nextWord() {
-    // Choose another word without retry loops, even with deterministic randomness.
-    const count = this.wordIndex < 0 ? this.words.length : this.words.length - 1;
-    let index = Math.floor(this.random() * count);
-    if (this.wordIndex >= 0 && index >= this.wordIndex) index++;
-    this.wordIndex = index;
+    if (this.remainingIndices.length === 0) {
+      if (this.wordIndex >= 0) {
+        this.state = 'finished';
+        return;
+      }
+      this.remainingIndices = this.words.map((_, index) => index);
+    }
+    const position = Math.floor(this.random() * this.remainingIndices.length);
+    this.wordIndex = this.remainingIndices.splice(position, 1)[0];
     this.position = 0;
   }
   get word() { return this.words?.[this.wordIndex]; }
